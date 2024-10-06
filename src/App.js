@@ -1,7 +1,7 @@
 // App.js
 import React, { useState } from "react";
 import { Box, Button, FormControl, FormLabel, Input, Heading, Text, Alert, AlertIcon, VStack, StackDivider } from "@chakra-ui/react";
-import Home from "./Home"; // home.js のインポート
+import Home from "./Home"; // Home.js のインポート
 
 const App = () => {
   const [userId, setUserId] = useState("");

@@ -1,7 +1,11 @@
 // App.js
 import React, { useState } from "react";
-import { Box, Button, FormControl, FormLabel, Input, Heading, Text, Alert, AlertIcon, VStack, StackDivider } from "@chakra-ui/react";
-import Home from "./Home"; // home.js のインポート
+import {Box,Button,FormControl,FormLabel,Input,Heading,Text,Alert,AlertIcon,VStack,StackDivider} from "@chakra-ui/react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom"; // react-router-domをインポート
+import Home from "./Home";
+import Person from './Person';  // 個人情報画面のコンポーネントをインポート
+import Manage from './Manage';  // 管理画面のコンポーネントをインポート
+import Log from './Log';        // ログイン画面のコンポーネントをインポート
 
 const App = () => {
   const [userId, setUserId] = useState("");
@@ -93,9 +97,21 @@ const App = () => {
     </Box>
   );
 
+  // ログイン後のルーティング
+  const renderAppContent = () => (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/person" element={<Person />} />
+        <Route path="/manage" element={<Manage />} />
+        <Route path="/log" element={<Log />} />
+      </Routes>
+    </Router>
+  );
+
   return (
     <div>
-      {isLoggedIn ? <Home onLogout={() => setIsLoggedIn(false)} /> : renderLogin()}
+      {isLoggedIn ? renderAppContent() : renderLogin()}
     </div>
   );
 };

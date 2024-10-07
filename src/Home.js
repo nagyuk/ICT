@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Heading,
@@ -9,9 +9,30 @@ import {
   TabPanels,
   TabPanel,
   Container,
+  Button,
+  Stack,
+  VStack,
+  List,
+  ListItem,
+  ListIcon,
+  IconButton,
 } from '@chakra-ui/react';
+import { Link } from 'react-router-dom'; // react-router-domからLinkをインポート
+import { CheckCircleIcon, DeleteIcon } from '@chakra-ui/icons';
 
-const HomePage = () => {
+const Home = () => {
+  // サンプルの買い物リスト
+  const [shoppingList, setShoppingList] = useState([
+    { id: 1, item: 'おむつ' },
+    { id: 2, item: 'トイレットペーパー' },
+    { id: 3, item: 'パンツ' },
+  ]);
+
+  // 買い物リストのアイテムを削除する関数
+  const handleDelete = (id) => {
+    setShoppingList(shoppingList.filter((item) => item.id !== id));
+  };
+
   return (
     <Box>
       <Container maxW="container.xl" py={10}>
@@ -19,28 +40,44 @@ const HomePage = () => {
         <Text fontSize="xl" mb={10}>
           ここはログイン後のホームページです。下部のタブから他のページに移動できます。
         </Text>
-      </Container>
 
-      <Tabs isFitted variant="enclosed" position="fixed" bottom={0} left={0} right={0} bg="white">
-        <TabList>
-          <Tab>ホーム</Tab>
-          <Tab>プロフィール</Tab>
-          <Tab>設定</Tab>
-        </TabList>
-        <TabPanels>
-          <TabPanel>
-            <Text>ホームページの内容</Text>
-          </TabPanel>
-          <TabPanel>
-            <Text>プロフィールページの内容</Text>
-          </TabPanel>
-          <TabPanel>
-            <Text>設定ページの内容</Text>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+        {/* 遷移ボタンを追加 */}
+        <Stack direction="row" spacing={4} mb={10}>
+          <Link to="/person">
+            <Button colorScheme="blue">個人画面</Button>
+          </Link>
+          <Link to="/manage">
+            <Button colorScheme="green">消耗品登録</Button>
+          </Link>
+          <Link to="/log">
+            <Button colorScheme="red">購入品入力</Button>
+          </Link>
+        </Stack>
+
+        {/* 買い物リスト表示 */}
+        <Heading as="h2" size="lg" mb={4}>買い物リスト</Heading>
+        <VStack align="start" spacing={4}>
+          <List spacing={3}>
+            {shoppingList.map((item) => (
+              <ListItem key={item.id} display="flex" alignItems="center">
+                <ListIcon as={CheckCircleIcon} color="green.500" />
+                {item.id}: {item.item}
+                {/* 削除ボタン */}
+                <IconButton
+                  icon={<DeleteIcon />}
+                  aria-label="Delete item"
+                  size="sm"
+                  colorScheme="red"
+                  onClick={() => handleDelete(item.id)}
+                  ml={4}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </VStack>
+      </Container>
     </Box>
   );
 };
 
-export default HomePage;
+export default Home;

@@ -17,6 +17,8 @@ import {
   Stack,
   FormControl,
   FormLabel,
+  HStack,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 
@@ -55,6 +57,8 @@ const Log = () => {
       });
     }
   };
+
+  const buttonSize = useBreakpointValue({ base: 'xs', md: 'sm' });
 
   return (
     <Container maxW="container.xl" py={4}>
@@ -121,20 +125,21 @@ const Log = () => {
           </Box>
         </Box>
 
-        <Stack direction={["column", "row"]} spacing={2} justifyContent="center" mt={6}>
-          <Link to="/" style={{ width: '100%' }}>
-            <Button colorScheme="teal" w="full">ホーム</Button>
+        {/* Updated navigation buttons */}
+        <HStack spacing={2} justifyContent="center" mt={6}>
+          <Link to="/" style={{ flex: 1 }}>
+            <Button colorScheme="teal" size={buttonSize} w="full">ホーム</Button>
           </Link>
-          <Link to="/person" style={{ width: '100%' }}>
-            <Button colorScheme="purple" w="full">個人情報</Button>
+          <Link to="/person" style={{ flex: 1 }}>
+            <Button colorScheme="blue" size={buttonSize} w="full">個人画面</Button>
           </Link>
-          <Link to="/manage" style={{ width: '100%' }}>
-            <Button colorScheme="green" w="full">消耗品登録</Button>
+          <Link to="/manage" style={{ flex: 1 }}>
+            <Button colorScheme="green" size={buttonSize} w="full">消耗品登録</Button>
           </Link>
-          <Link to="/log" style={{ width: '100%' }}>
-            <Button colorScheme="blue" w="full">購入品入力</Button>
+          <Link to="/log" style={{ flex: 1 }}>
+            <Button colorScheme="red" size={buttonSize} w="full">購入品入力</Button>
           </Link>
-        </Stack>
+        </HStack>
       </VStack>
     </Container>
   );

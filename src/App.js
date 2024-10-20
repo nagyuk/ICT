@@ -6,6 +6,7 @@ import Home from "./Home";
 import Person from './Person';  // 個人情報画面のコンポーネントをインポート
 import Manage from './Manage';  // 管理画面のコンポーネントをインポート
 import Log from './Log';        // ログイン画面のコンポーネントをインポート
+//環境構築
 
 const App = () => {
   const [userId, setUserId] = useState("");

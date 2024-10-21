@@ -13,10 +13,15 @@ const Home = () => {
   // 次回交換日が近づいた場合に通知を送る
   useEffect(() => {
     const checkReplacementDates = () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      const threeDaysFromNow = new Date(today);
+      threeDaysFromNow.setDate(today.getDate() + 3); // 現在の日付から3日後
 
       shoppingList.forEach((item) => {
-        if (item.nextReplacementDate === today) {
+        const nextReplacementDate = new Date(item.nextReplacementDate);
+
+        // 次回交換日が今日または3日以内の場合
+        if (nextReplacementDate <= threeDaysFromNow && nextReplacementDate >= today) {
           if ('serviceWorker' in navigator && 'PushManager' in window) {
             navigator.serviceWorker.ready.then(function(registration) {
               const options = {
@@ -31,7 +36,9 @@ const Home = () => {
     };
 
     // 毎日交換日をチェック
-    checkReplacementDates();
+    const intervalId = setInterval(checkReplacementDates, 24 * 60 * 60 * 1000); // 24時間ごとにチェック
+    checkReplacementDates(); // 初回チェック
+    return () => clearInterval(intervalId); // クリーンアップ
   }, [shoppingList]);
 
   const handleDelete = (id) => {

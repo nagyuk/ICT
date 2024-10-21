@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Heading, Text, Container, Button, VStack, List, ListItem, ListIcon, IconButton, Flex, useBreakpointValue, HStack, Input } from '@chakra-ui/react';
+import { Box, Heading, Text, Container, Button, VStack, List, ListItem, ListIcon, IconButton, Flex, useBreakpointValue, HStack, Input, useToast } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { CheckCircleIcon, DeleteIcon } from '@chakra-ui/icons';
 
@@ -9,6 +9,42 @@ const Home = () => {
     { id: 2, item: 'トイレットペーパー', nextReplacementDate: '2024-11-05' },
     { id: 3, item: 'パンツ', nextReplacementDate: '2024-10-29' },
   ]);
+
+  const toast = useToast();
+
+  // プッシュ通知の許可を要求し、許可状態に基づいて通知を送信する関数
+  const requestNotificationPermissionAndNotify = async (item) => {
+    if (!('Notification' in window)) {
+      console.log('このブラウザはプッシュ通知をサポートしていません');
+      return;
+    }
+
+    let permission = Notification.permission;
+
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission === 'granted') {
+      // 通知を送信
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        const registration = await navigator.serviceWorker.ready;
+        const options = {
+          body: `${item.item}の交換日が明日です。お忘れなく！`,
+          icon: 'icon.png', // 任意のアイコン
+        };
+        registration.showNotification('消耗品の交換通知', options);
+      }
+    } else if (permission === 'denied') {
+      toast({
+        title: '通知が拒否されています',
+        description: '通知を受け取るには、ブラウザの設定で許可してください',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   // 次回交換日が近づいた場合に通知を送る
   const checkReplacementDates = () => {
@@ -21,15 +57,7 @@ const Home = () => {
 
       // 次回交換日が明日である場合
       if (nextReplacementDate.toDateString() === tomorrow.toDateString()) {
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-          navigator.serviceWorker.ready.then(function(registration) {
-            const options = {
-              body: `${item.item}の交換日が明日です。お忘れなく！`,
-              icon: 'icon.png', // 任意のアイコン
-            };
-            registration.showNotification('消耗品の交換通知', options);
-          });
-        }
+        requestNotificationPermissionAndNotify(item);
       }
     });
   };

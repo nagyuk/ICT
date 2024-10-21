@@ -11,33 +11,36 @@ const Home = () => {
   ]);
 
   // 次回交換日が近づいた場合に通知を送る
-  useEffect(() => {
-    const checkReplacementDates = () => {
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() + 1); // 明日の日付
+  const checkReplacementDates = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1); // 明日の日付
 
-      shoppingList.forEach((item) => {
-        const nextReplacementDate = new Date(item.nextReplacementDate);
+    shoppingList.forEach((item) => {
+      const nextReplacementDate = new Date(item.nextReplacementDate);
 
-        // 次回交換日が明日である場合
-        if (nextReplacementDate.toDateString() === tomorrow.toDateString()) {
-          if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.ready.then(function(registration) {
-              const options = {
-                body: `${item.item}の交換日が明日です。お忘れなく！`,
-                icon: 'icon.png', // 任意のアイコン
-              };
-              registration.showNotification('消耗品の交換通知', options);
-            });
-          }
+      // 次回交換日が明日である場合
+      if (nextReplacementDate.toDateString() === tomorrow.toDateString()) {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          navigator.serviceWorker.ready.then(function(registration) {
+            const options = {
+              body: `${item.item}の交換日が明日です。お忘れなく！`,
+              icon: 'icon.png', // 任意のアイコン
+            };
+            registration.showNotification('消耗品の交換通知', options);
+          });
         }
-      });
-    };
+      }
+    });
+  };
+
+  useEffect(() => {
+    // ホーム画面が開かれたときに通知をチェック
+    checkReplacementDates();
 
     // 毎日交換日をチェック
     const intervalId = setInterval(checkReplacementDates, 24 * 60 * 60 * 1000); // 24時間ごとにチェック
-    checkReplacementDates(); // 初回チェック
+
     return () => clearInterval(intervalId); // クリーンアップ
   }, [shoppingList]);
 

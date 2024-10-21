@@ -5,7 +5,7 @@ import { CheckCircleIcon, DeleteIcon } from '@chakra-ui/icons';
 
 const Home = () => {
   const [shoppingList, setShoppingList] = useState([
-    { id: 1, item: 'おむつ', nextReplacementDate: '2024-10-21' },
+    { id: 1, item: 'おむつ', nextReplacementDate: '2024-10-22' }, 
     { id: 2, item: 'トイレットペーパー', nextReplacementDate: '2024-11-05' },
     { id: 3, item: 'パンツ', nextReplacementDate: '2024-10-29' },
   ]);
@@ -14,18 +14,18 @@ const Home = () => {
   useEffect(() => {
     const checkReplacementDates = () => {
       const today = new Date();
-      const threeDaysFromNow = new Date(today);
-      threeDaysFromNow.setDate(today.getDate() + 3); // 現在の日付から3日後
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1); // 明日の日付
 
       shoppingList.forEach((item) => {
         const nextReplacementDate = new Date(item.nextReplacementDate);
 
-        // 次回交換日が今日または3日以内の場合
-        if (nextReplacementDate <= threeDaysFromNow && nextReplacementDate >= today) {
+        // 次回交換日が明日である場合
+        if (nextReplacementDate.toDateString() === tomorrow.toDateString()) {
           if ('serviceWorker' in navigator && 'PushManager' in window) {
             navigator.serviceWorker.ready.then(function(registration) {
               const options = {
-                body: `${item.item}の交換日が近づいています`,
+                body: `${item.item}の交換日が明日です。お忘れなく！`,
                 icon: 'icon.png', // 任意のアイコン
               };
               registration.showNotification('消耗品の交換通知', options);

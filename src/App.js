@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import {Box,Button,FormControl,FormLabel,Input,Heading,Text,Alert,AlertIcon,VStack,StackDivider} from "@chakra-ui/react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom"; // react-router-domをインポート
+import { register as registerServiceWorker } from './ServiceWorkerRegistration'; // プッシュ通知に関すること
 import Home from "./Home";
 import Person from './Person';  // 個人情報画面のコンポーネントをインポート
 import Manage from './Manage';  // 管理画面のコンポーネントをインポート

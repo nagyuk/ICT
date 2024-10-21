@@ -1,25 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Heading,
-  Text,
-  VStack,
-  Input,
-  Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Container,
-  useToast,
-  Stack,
-  FormControl,
-  FormLabel,
-  HStack,
-  useBreakpointValue,
-} from '@chakra-ui/react';
+import {Box,Heading,Text,VStack,Input,Button,Table,Thead,Tbody,Tr,Th,Td,Container,useToast,Stack,FormControl,FormLabel,HStack,useBreakpointValue,} from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 
 const Log = () => {

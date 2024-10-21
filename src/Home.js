@@ -1,31 +1,50 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Heading,
-  Text,
-  Container,
-  Button,
-  VStack,
-  List,
-  ListItem,
-  ListIcon,
-  IconButton,
-  Flex,
-  useBreakpointValue,
-  HStack,
-} from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, Heading, Text, Container, Button, VStack, List, ListItem, ListIcon, IconButton, Flex, useBreakpointValue, HStack, Input } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { CheckCircleIcon, DeleteIcon } from '@chakra-ui/icons';
 
 const Home = () => {
   const [shoppingList, setShoppingList] = useState([
-    { id: 1, item: 'おむつ' },
-    { id: 2, item: 'トイレットペーパー' },
-    { id: 3, item: 'パンツ' },
+    { id: 1, item: 'おむつ', nextReplacementDate: '2024-10-21' },
+    { id: 2, item: 'トイレットペーパー', nextReplacementDate: '2024-11-05' },
+    { id: 3, item: 'パンツ', nextReplacementDate: '2024-10-29' },
   ]);
+
+  // 次回交換日が近づいた場合に通知を送る
+  useEffect(() => {
+    const checkReplacementDates = () => {
+      const today = new Date().toISOString().split('T')[0];
+
+      shoppingList.forEach((item) => {
+        if (item.nextReplacementDate === today) {
+          if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.ready.then(function(registration) {
+              const options = {
+                body: `${item.item}の交換日が近づいています`,
+                icon: 'icon.png', // 任意のアイコン
+              };
+              registration.showNotification('消耗品の交換通知', options);
+            });
+          }
+        }
+      });
+    };
+
+    // 毎日交換日をチェック
+    checkReplacementDates();
+  }, [shoppingList]);
 
   const handleDelete = (id) => {
     setShoppingList(shoppingList.filter((item) => item.id !== id));
+  };
+
+  // 次回交換日の更新
+  const handleNextReplacementDateChange = (id, newDate) => {
+    setShoppingList((prevList) =>
+      prevList.map((item) =>
+        item.id === id ? { ...item, nextReplacementDate: newDate } : item
+      )
+    );
   };
 
   const buttonSize = useBreakpointValue({ base: 'xs', md: 'sm' });
@@ -46,9 +65,20 @@ const Home = () => {
             {shoppingList.map((item) => (
               <ListItem key={item.id}>
                 <Flex alignItems="center" justifyContent="space-between">
-                  <Flex alignItems="center">
-                    <ListIcon as={CheckCircleIcon} color="green.500" />
-                    <Text fontSize={fontSize}>{item.item}</Text>
+                  <Flex direction="column">
+                    <HStack alignItems="center">
+                      <ListIcon as={CheckCircleIcon} color="green.500" />
+                      <Text fontSize={fontSize}>{item.item}</Text>
+                    </HStack>
+                    {/* 次回交換予定日を表示 */}
+                    <Text fontSize="sm" color="gray.500">次回交換日: {item.nextReplacementDate}</Text>
+                    {/* 次回交換日を変更するための日付入力 */}
+                    <Input
+                      type="date"
+                      value={item.nextReplacementDate}
+                      onChange={(e) => handleNextReplacementDateChange(item.id, e.target.value)}
+                      size="sm"
+                    />
                   </Flex>
                   <IconButton
                     icon={<DeleteIcon />}

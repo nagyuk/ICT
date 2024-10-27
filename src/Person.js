@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   Box,
   Container,
   VStack,
   Heading,
-  Text,
   SimpleGrid,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
-  useColorModeValue,
   Button,
-  useBreakpointValue,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -25,65 +21,103 @@ import {
   FormLabel,
   Input,
   useDisclosure,
-  HStack
+  useToast
 } from '@chakra-ui/react';
+import { Navigation } from './components/Navigation';
+import { api } from './services/api';
 
-const Person = () => {
-  const [personalInfo, setPersonalInfo] = useState({
-    name: '山田 太郎',
-    age: 35,
-    email: 'taro.yamada@example.com',
-    address: '東京都渋谷区〇〇町1-2-3',
-  });
-
+const Person = ({ user, setUser }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [editInfo, setEditInfo] = useState({...personalInfo});
-
-  const bgColor = useColorModeValue('gray.50', 'gray.700');
-  const textColor = useColorModeValue('gray.600', 'gray.200');
-  const statBgColor = useColorModeValue('white', 'gray.600');
-
-  const fontSize = useBreakpointValue({ base: 'md', md: 'lg' });
-  const headingSize = useBreakpointValue({ base: '2xl', md: '3xl' });
-  const buttonSize = useBreakpointValue({ base: 'xs', md: 'sm' });
+  const [editInfo, setEditInfo] = useState({
+    Name: user.Name,
+    Familynum: user.Familynum,
+    Password: '',
+    PasswordConfirm: '',
+  });
+  const toast = useToast();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditInfo(prev => ({...prev, [name]: value}));
+    setEditInfo(prev => ({
+      ...prev,
+      [name]: name === 'Familynum' ? parseInt(value) || 0 : value
+    }));
   };
 
-  const handleSubmit = () => {
-    setPersonalInfo(editInfo);
-    onClose();
+  const validateForm = () => {
+    if (editInfo.Password !== editInfo.PasswordConfirm) {
+      toast({
+        title: 'パスワードが一致しません',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return false;
+    }
+    if (editInfo.Password && editInfo.Password.length < 8) {
+      toast({
+        title: 'パスワードは8文字以上必要です',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const updateData = {
+        Name: editInfo.Name,
+        Familynum: editInfo.Familynum,
+        ...(editInfo.Password ? { Password: editInfo.Password } : {})
+      };
+
+      const updatedUser = await api.updateUser(user.UID, updateData);
+      setUser(updatedUser);
+      
+      toast({
+        title: '更新成功',
+        description: 'プロフィールが更新されました',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      onClose();
+    } catch (error) {
+      toast({
+        title: '更新失敗',
+        description: '情報の更新に失敗しました',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   return (
-    <Box pb={20}>  {/* Increase bottom padding to account for the navigation bar */}
+    <Box pb={20}>
       <Container maxW="container.xl" py={8}>
         <VStack spacing={8} align="stretch">
-          <Heading as="h1" fontSize={headingSize} textAlign="center">個人情報</Heading>
+          <Heading as="h1" fontSize="2xl" textAlign="center">個人情報</Heading>
           
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-            <Stat bg={statBgColor} p={5} borderRadius="lg" boxShadow="md">
-              <StatLabel fontSize={fontSize}>名前</StatLabel>
-              <StatNumber fontSize={fontSize}>{personalInfo.name}</StatNumber>
+            <Stat bg="white" p={5} borderRadius="lg" boxShadow="md">
+              <StatLabel>名前</StatLabel>
+              <StatNumber>{user.Name}</StatNumber>
             </Stat>
-            <Stat bg={statBgColor} p={5} borderRadius="lg" boxShadow="md">
-              <StatLabel fontSize={fontSize}>年齢</StatLabel>
-              <StatNumber fontSize={fontSize}>{personalInfo.age}</StatNumber>
-              <StatHelpText fontSize={fontSize}>歳</StatHelpText>
-            </Stat>
-            <Stat bg={statBgColor} p={5} borderRadius="lg" boxShadow="md">
-              <StatLabel fontSize={fontSize}>メールアドレス</StatLabel>
-              <StatNumber fontSize={fontSize}>{personalInfo.email}</StatNumber>
-            </Stat>
-            <Stat bg={statBgColor} p={5} borderRadius="lg" boxShadow="md">
-              <StatLabel fontSize={fontSize}>住所</StatLabel>
-              <StatNumber fontSize={fontSize}>{personalInfo.address}</StatNumber>
+            <Stat bg="white" p={5} borderRadius="lg" boxShadow="md">
+              <StatLabel>世帯人数</StatLabel>
+              <StatNumber>{user.Familynum}</StatNumber>
+              <StatHelpText>人</StatHelpText>
             </Stat>
           </SimpleGrid>
 
-          <Box textAlign="center" mt={6}>
+          <Box textAlign="center">
             <Button colorScheme="blue" size="lg" onClick={onOpen}>
               情報を編集
             </Button>
@@ -100,19 +134,41 @@ const Person = () => {
             <VStack spacing={4}>
               <FormControl>
                 <FormLabel>名前</FormLabel>
-                <Input name="name" value={editInfo.name} onChange={handleInputChange} />
+                <Input
+                  name="Name"
+                  value={editInfo.Name}
+                  onChange={handleInputChange}
+                />
               </FormControl>
+              
               <FormControl>
-                <FormLabel>年齢</FormLabel>
-                <Input name="age" type="number" value={editInfo.age} onChange={handleInputChange} />
+                <FormLabel>世帯人数</FormLabel>
+                <Input
+                  name="Familynum"
+                  type="number"
+                  value={editInfo.Familynum}
+                  onChange={handleInputChange}
+                />
               </FormControl>
+
               <FormControl>
-                <FormLabel>メールアドレス</FormLabel>
-                <Input name="email" type="email" value={editInfo.email} onChange={handleInputChange} />
+                <FormLabel>新しいパスワード（変更する場合のみ）</FormLabel>
+                <Input
+                  name="Password"
+                  type="password"
+                  value={editInfo.Password}
+                  onChange={handleInputChange}
+                />
               </FormControl>
+
               <FormControl>
-                <FormLabel>住所</FormLabel>
-                <Input name="address" value={editInfo.address} onChange={handleInputChange} />
+                <FormLabel>パスワード確認</FormLabel>
+                <Input
+                  name="PasswordConfirm"
+                  type="password"
+                  value={editInfo.PasswordConfirm}
+                  onChange={handleInputChange}
+                />
               </FormControl>
             </VStack>
           </ModalBody>
@@ -126,32 +182,7 @@ const Person = () => {
         </ModalContent>
       </Modal>
 
-      {/* Navigation bar at the bottom */}
-      <Box 
-        position="fixed" 
-        bottom={0} 
-        left={0} 
-        right={0} 
-        bg="white" 
-        boxShadow="0 -2px 10px rgba(0, 0, 0, 0.1)"
-      >
-        <Container maxW="container.xl">
-          <HStack justifyContent="space-around" py={2}>
-            <Link to="/" style={{ flex: 1 }}>
-              <Button colorScheme="teal" size={buttonSize} w="full">ホーム</Button>
-            </Link>
-            <Link to="/person" style={{ flex: 1 }}>
-              <Button colorScheme="blue" size={buttonSize} w="full">個人画面</Button>
-            </Link>
-            <Link to="/manage" style={{ flex: 1 }}>
-              <Button colorScheme="green" size={buttonSize} w="full">消耗品登録</Button>
-            </Link>
-            <Link to="/log" style={{ flex: 1 }}>
-              <Button colorScheme="red" size={buttonSize} w="full">購入品入力</Button>
-            </Link>
-          </HStack>
-        </Container>
-      </Box>
+      <Navigation />
     </Box>
   );
 };

@@ -14,40 +14,55 @@ import {
   Td,
   Container,
   useToast,
-  Stack,
   FormControl,
-  FormLabel,
-  HStack,
-  useBreakpointValue,
+  FormLabel
 } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+import { Navigation } from './components/Navigation';
+import { api } from './services/api';
 
-const Log = () => {
+const Log = ({ user }) => {
   const [productName, setProductName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchases, setPurchases] = useState([]);
   const toast = useToast();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (productName && quantity && purchaseDate) {
-      const newPurchase = {
-        id: Date.now(),
-        productName,
-        quantity: parseInt(quantity),
-        purchaseDate,
-      };
-      setPurchases([...purchases, newPurchase]);
-      setProductName('');
-      setQuantity('');
-      setPurchaseDate('');
-      toast({
-        title: '購入記録を保存しました',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      try {
+        const newPurchase = {
+          id: Date.now(),
+          productName,
+          quantity: parseInt(quantity),
+          purchaseDate,
+        };
+
+        // 購入記録を追加
+        setPurchases([...purchases, newPurchase]);
+
+        // 最終購入日を更新
+        await api.updateLastPurchase(user.UID, productName);
+
+        // フォームをリセット
+        setProductName('');
+        setQuantity('');
+        setPurchaseDate('');
+
+        toast({
+          title: '購入記録を保存しました',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          title: '保存に失敗しました',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     } else {
       toast({
         title: '全ての項目を入力してください',
@@ -58,10 +73,8 @@ const Log = () => {
     }
   };
 
-  const buttonSize = useBreakpointValue({ base: 'xs', md: 'sm' });
-
   return (
-    <Box pb={20}>  {/* Add bottom padding to account for the navigation bar */}
+    <Box pb={20}>
       <Container maxW="container.xl" py={4}>
         <VStack spacing={6} align="stretch">
           <Heading as="h1" fontSize="2xl" textAlign="center">購入品入力</Heading>
@@ -127,33 +140,7 @@ const Log = () => {
           </Box>
         </VStack>
       </Container>
-
-      {/* Navigation bar at the bottom */}
-      <Box 
-        position="fixed" 
-        bottom={0} 
-        left={0} 
-        right={0} 
-        bg="white" 
-        boxShadow="0 -2px 10px rgba(0, 0, 0, 0.1)"
-      >
-        <Container maxW="container.xl">
-          <HStack justifyContent="space-around" py={2}>
-            <Link to="/" style={{ flex: 1 }}>
-              <Button colorScheme="teal" size={buttonSize} w="full">ホーム</Button>
-            </Link>
-            <Link to="/person" style={{ flex: 1 }}>
-              <Button colorScheme="blue" size={buttonSize} w="full">個人画面</Button>
-            </Link>
-            <Link to="/manage" style={{ flex: 1 }}>
-              <Button colorScheme="green" size={buttonSize} w="full">消耗品登録</Button>
-            </Link>
-            <Link to="/log" style={{ flex: 1 }}>
-              <Button colorScheme="red" size={buttonSize} w="full">購入品入力</Button>
-            </Link>
-          </HStack>
-        </Container>
-      </Box>
+      <Navigation />
     </Box>
   );
 };

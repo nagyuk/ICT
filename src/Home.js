@@ -1,121 +1,261 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Heading, Text, Container, Button, VStack, List, ListItem, ListIcon, IconButton, Flex, useBreakpointValue, HStack, Input, useToast } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+import {
+  Box,
+  Heading,
+  Text,
+  Container,
+  VStack,
+  List,
+  ListItem,
+  ListIcon,
+  IconButton,
+  Flex,
+  HStack,
+  Input,
+  useToast,
+  Badge,
+  Button,
+  ButtonGroup,
+} from '@chakra-ui/react';
 import { CheckCircleIcon, DeleteIcon } from '@chakra-ui/icons';
+import { Navigation } from './components/Navigation';
+import { api } from './services/api';
+import { notificationService } from './services/notification';
 
-const Home = () => {
-  const [shoppingList, setShoppingList] = useState([
-    { id: 1, item: 'おむつ', nextReplacementDate: '2024-10-22' }, 
-    { id: 2, item: 'トイレットペーパー', nextReplacementDate: '2024-11-05' },
-    { id: 3, item: 'パンツ', nextReplacementDate: '2024-10-29' },
-  ]);
-
+const Home = ({ user }) => {
+  const [shoppingList, setShoppingList] = useState([]);
   const toast = useToast();
 
-  // プッシュ通知の許可を要求し、許可状態に基づいて通知を送信する関数
-  const requestNotificationPermissionAndNotify = async (item) => {
-    if (!('Notification' in window)) {
-      console.log('このブラウザはプッシュ通知をサポートしていません');
-      return;
-    }
-
-    let permission = Notification.permission;
-
-    if (permission === 'default') {
-      permission = await Notification.requestPermission();
-    }
-
-    if (permission === 'granted') {
-      // 通知を送信
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
-        const registration = await navigator.serviceWorker.ready;
-        const options = {
-          body: `${item.item}の交換日が明日です。お忘れなく！`,
-          icon: 'icon.png', // 任意のアイコン
-        };
-        registration.showNotification('消耗品の交換通知', options);
+  // 通知の設定
+  useEffect(() => {
+    const setupNotifications = async () => {
+      try {
+        const hasPermission = await notificationService.requestPermission();
+        if (hasPermission) {
+          toast({
+            title: '通知が許可されました',
+            description: '商品の交換時期が近づくとお知らせします',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+        } else {
+          toast({
+            title: '通知が許可されていません',
+            description: 'ブラウザの設定から通知を許可してください',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      } catch (error) {
+        console.error('通知の設定に失敗しました:', error);
       }
-    } else if (permission === 'denied') {
+    };
+
+    setupNotifications();
+  }, [toast]);
+
+  // 商品データの取得と通知チェック
+  useEffect(() => {
+    const checkItems = async () => {
+      try {
+        const items = await api.getItems(user.UID);
+        setShoppingList(items);
+        await notificationService.checkItemsAndNotify(items);
+      } catch (error) {
+        console.error('商品チェックに失敗しました:', error);
+        toast({
+          title: 'データの取得に失敗しました',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    };
+
+    checkItems();
+    // 15分ごとにチェック
+    const interval = setInterval(checkItems, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user.UID, toast]);
+
+  const handleDelete = async (itemName) => {
+    try {
+      const newList = shoppingList.filter(item => item.Item !== itemName);
+      setShoppingList(newList);
       toast({
-        title: '通知が拒否されています',
-        description: '通知を受け取るには、ブラウザの設定で許可してください',
-        status: 'warning',
-        duration: 5000,
+        title: '商品を削除しました',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: '削除に失敗しました',
+        status: 'error',
+        duration: 3000,
         isClosable: true,
       });
     }
   };
 
-  // 次回交換日が近づいた場合に通知を送る
-  const checkReplacementDates = () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1); // 明日の日付
+  const handleNextReplacementDateChange = async (itemName, newDate) => {
+    try {
+      await api.updateLastPurchase(user.UID, itemName);
+      const updatedItems = await api.getItems(user.UID);
+      setShoppingList(updatedItems);
+      toast({
+        title: '更新成功',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: '更新に失敗しました',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
 
-    shoppingList.forEach((item) => {
-      const nextReplacementDate = new Date(item.nextReplacementDate);
-
-      // 次回交換日が明日である場合
-      if (nextReplacementDate.toDateString() === tomorrow.toDateString()) {
-        requestNotificationPermissionAndNotify(item);
-      }
+  // テスト通知用の関数
+  const handleTestNotification = () => {
+    new Notification('テスト通知', {
+      body: 'これはテスト通知です',
+      requireInteraction: true
+    });
+    toast({
+      title: 'テスト通知を送信しました',
+      status: 'info',
+      duration: 2000,
+      isClosable: true,
     });
   };
 
-  useEffect(() => {
-    // ホーム画面が開かれたときに通知をチェック
-    checkReplacementDates();
+  // 複数のテストケース用の関数
+  const handleTestMultipleNotifications = () => {
+    // 即時通知
+    new Notification('通知テスト1', {
+      body: '即時通知です',
+    });
 
-    // 毎日交換日をチェック
-    const intervalId = setInterval(checkReplacementDates, 24 * 60 * 60 * 1000); // 24時間ごとにチェック
+    // 3秒後に通知
+    setTimeout(() => {
+      new Notification('通知テスト2', {
+        body: '3秒後の通知です',
+      });
+    }, 3000);
 
-    return () => clearInterval(intervalId); // クリーンアップ
-  }, [shoppingList]);
-
-  const handleDelete = (id) => {
-    setShoppingList(shoppingList.filter((item) => item.id !== id));
+    // 6秒後に通知
+    setTimeout(() => {
+      new Notification('通知テスト3', {
+        body: '6秒後の通知です',
+      });
+    }, 6000);
   };
 
-  // 次回交換日の更新
-  const handleNextReplacementDateChange = (id, newDate) => {
-    setShoppingList((prevList) =>
-      prevList.map((item) =>
-        item.id === id ? { ...item, nextReplacementDate: newDate } : item
-      )
+  // 商品期限切れのテスト通知
+  const handleTestExpirationNotification = () => {
+    const testItem = {
+      Item: "テスト商品",
+      Lastday: new Date(2024, 0, 1), // 2024年1月1日
+      Span: new Date(2024, 0, 30)    // 2024年1月30日
+    };
+    notificationService.checkItemsAndNotify([testItem]);
+  };
+
+  // 残り日数に基づいて色を決定
+  const getReplacementBadge = (item) => {
+    const daysRemaining = notificationService.calculateDaysUntilReplacement(item);
+    let color = 'green';
+    if (daysRemaining <= 0) {
+      color = 'red';
+    } else if (daysRemaining <= 3) {
+      color = 'orange';
+    } else if (daysRemaining <= 7) {
+      color = 'yellow';
+    }
+
+    return (
+      <Badge colorScheme={color} ml={2}>
+        {daysRemaining <= 0 
+          ? '交換時期超過'
+          : `残り${daysRemaining}日`}
+      </Badge>
     );
   };
 
-  const buttonSize = useBreakpointValue({ base: 'xs', md: 'sm' });
-  const fontSize = useBreakpointValue({ base: 'md', md: 'xl' });
-  const headingSize = useBreakpointValue({ base: 'xl', md: '2xl' });
-
   return (
-    <Box pb={16}>  {/* Add bottom padding to account for the navigation bar */}
+    <Box pb={16}>
       <Container maxW="container.xl" py={4}>
         <VStack spacing={6} align="stretch">
-          <Heading as="h1" fontSize={headingSize} textAlign="center">ようこそ、ホームページへ</Heading>
-          <Text fontSize={fontSize} textAlign="center">
-            ここはログイン後のホームページです。下部のボタンから他のページに移動できます。
+          <Heading as="h1" textAlign="center">ようこそ、{user.Name}さん</Heading>
+          <Text textAlign="center">
+            買い物リスト
           </Text>
 
-          <Heading as="h2" fontSize="xl" mb={2}>買い物リスト</Heading>
+          {/* 開発用のテストボタン */}
+          {process.env.NODE_ENV === 'development' && (
+            <Box 
+              p={4} 
+              bg="gray.50" 
+              borderRadius="md"
+              border="1px dashed"
+              borderColor="gray.300"
+            >
+              <VStack spacing={4}>
+                <Heading as="h3" size="sm" color="gray.600">
+                  開発用通知テスト
+                </Heading>
+                <ButtonGroup>
+                  <Button
+                    colorScheme="purple"
+                    size="sm"
+                    onClick={handleTestNotification}
+                  >
+                    シンプル通知テスト
+                  </Button>
+                  <Button
+                    colorScheme="blue"
+                    size="sm"
+                    onClick={handleTestMultipleNotifications}
+                  >
+                    連続通知テスト
+                  </Button>
+                  <Button
+                    colorScheme="orange"
+                    size="sm"
+                    onClick={handleTestExpirationNotification}
+                  >
+                    期限切れ通知テスト
+                  </Button>
+                </ButtonGroup>
+              </VStack>
+            </Box>
+          )}
+
           <List spacing={3}>
             {shoppingList.map((item) => (
-              <ListItem key={item.id}>
+              <ListItem key={item.Item}>
                 <Flex alignItems="center" justifyContent="space-between">
-                  <Flex direction="column">
+                  <Flex direction="column" flex="1">
                     <HStack alignItems="center">
                       <ListIcon as={CheckCircleIcon} color="green.500" />
-                      <Text fontSize={fontSize}>{item.item}</Text>
+                      <Text fontSize="lg">{item.Item}</Text>
+                      {getReplacementBadge(item)}
                     </HStack>
-                    {/* 次回交換予定日を表示 */}
-                    <Text fontSize="sm" color="gray.500">次回交換日: {item.nextReplacementDate}</Text>
-                    {/* 次回交換日を変更するための日付入力 */}
+                    <Text fontSize="sm" color="gray.500">
+                      前回の購入日: {new Date(item.Lastday).toLocaleDateString()}
+                    </Text>
                     <Input
                       type="date"
-                      value={item.nextReplacementDate}
-                      onChange={(e) => handleNextReplacementDateChange(item.id, e.target.value)}
+                      value={new Date(item.Lastday).toISOString().split('T')[0]}
+                      onChange={(e) => handleNextReplacementDateChange(item.Item, e.target.value)}
                       size="sm"
+                      mt={2}
                     />
                   </Flex>
                   <IconButton
@@ -123,7 +263,8 @@ const Home = () => {
                     aria-label="Delete item"
                     size="sm"
                     colorScheme="red"
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => handleDelete(item.Item)}
+                    ml={4}
                   />
                 </Flex>
               </ListItem>
@@ -131,33 +272,7 @@ const Home = () => {
           </List>
         </VStack>
       </Container>
-
-      {/* Navigation bar at the bottom */}
-      <Box 
-        position="fixed" 
-        bottom={0} 
-        left={0} 
-        right={0} 
-        bg="white" 
-        boxShadow="0 -2px 10px rgba(0, 0, 0, 0.1)"
-      >
-        <Container maxW="container.xl">
-          <HStack justifyContent="space-around" py={2}>
-            <Link to="/" style={{ flex: 1 }}>
-              <Button colorScheme="teal" size={buttonSize} w="full">ホーム</Button>
-            </Link>
-            <Link to="/person" style={{ flex: 1 }}>
-              <Button colorScheme="blue" size={buttonSize} w="full">個人画面</Button>
-            </Link>
-            <Link to="/manage" style={{ flex: 1 }}>
-              <Button colorScheme="green" size={buttonSize} w="full">消耗品登録</Button>
-            </Link>
-            <Link to="/log" style={{ flex: 1 }}>
-              <Button colorScheme="red" size={buttonSize} w="full">購入品入力</Button>
-            </Link>
-          </HStack>
-        </Container>
-      </Box>
+      <Navigation />
     </Box>
   );
 };

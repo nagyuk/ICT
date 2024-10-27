@@ -1,34 +1,42 @@
-// App.js
-import React, { useState } from "react";
-import {Box,Button,FormControl,FormLabel,Input,Heading,Text,Alert,AlertIcon,VStack,StackDivider} from "@chakra-ui/react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom"; // react-router-domをインポート
-import { register as registerServiceWorker } from './ServiceWorkerRegistration'; // プッシュ通知に関すること
+import React, { useState } from 'react';
+import {
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Heading,
+  Text,
+  Alert,
+  AlertIcon,
+  VStack,
+  StackDivider,
+  ChakraProvider
+} from "@chakra-ui/react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { api } from './services/api';
 import Home from "./Home";
-import Person from './Person';  // 個人情報画面のコンポーネントをインポート
-import Manage from './Manage';  // 管理画面のコンポーネントをインポート
-import Log from './Log';        // ログイン画面のコンポーネントをインポート
+import Person from './Person';
+import Manage from './Manage';
+import Log from './Log';
 
 const App = () => {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // ログイン状態を管理
+  const [user, setUser] = useState(null);
 
-  // サンプルの正しいユーザIDとパスワード
-  const validUserId = "jobhunter";
-  const validPassword = "career2024";
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (userId === validUserId && password === validPassword) {
-      setErrorMessage(""); // エラーメッセージをクリア
-      setIsLoggedIn(true); // ログイン成功時に状態を変更
-    } else {
+    try {
+      const userData = await api.login(userId, password);
+      setUser(userData);
+      setErrorMessage("");
+    } catch (error) {
       setErrorMessage("Invalid User ID or Password");
     }
   };
 
-  // ログイン画面
   const renderLogin = () => (
     <Box
       bg="gray.50"
@@ -59,7 +67,6 @@ const App = () => {
               <FormControl id="userId" isRequired>
                 <FormLabel>User ID</FormLabel>
                 <Input
-                  type="text"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   placeholder="Enter your User ID"
@@ -98,22 +105,21 @@ const App = () => {
     </Box>
   );
 
-  // ログイン後のルーティング
-  const renderAppContent = () => (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/person" element={<Person />} />
-        <Route path="/manage" element={<Manage />} />
-        <Route path="/log" element={<Log />} />
-      </Routes>
-    </Router>
-  );
-
   return (
-    <div>
-      {isLoggedIn ? renderAppContent() : renderLogin()}
-    </div>
+    <ChakraProvider>
+      {!user ? (
+        renderLogin()
+      ) : (
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home user={user} />} />
+            <Route path="/person" element={<Person user={user} setUser={setUser} />} />
+            <Route path="/manage" element={<Manage user={user} />} />
+            <Route path="/log" element={<Log user={user} />} />
+          </Routes>
+        </Router>
+      )}
+    </ChakraProvider>
   );
 };
 

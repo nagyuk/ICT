@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -15,34 +14,67 @@ import {
   Tr,
   Th,
   Td,
-  HStack,
-  useToast,
-  useBreakpointValue,
+  useToast
 } from '@chakra-ui/react';
+import { Navigation } from './components/Navigation';
+import { api } from './services/api';
 
-const Manage = () => {
+const Manage = ({ user }) => {
   const [productName, setProductName] = useState('');
   const [initialCycle, setInitialCycle] = useState('');
-  const [products, setProducts] = useState([]);
+  const [items, setItems] = useState([]);
   const toast = useToast();
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const data = await api.getItems(user.UID);
+        setItems(data);
+      } catch (error) {
+        toast({
+          title: 'データの取得に失敗しました',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    };
+    fetchItems();
+  }, [user.UID, toast]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (productName && initialCycle) {
-      const newProduct = {
-        id: Date.now(),
-        name: productName,
-        cycle: parseInt(initialCycle),
-      };
-      setProducts([...products, newProduct]);
-      setProductName('');
-      setInitialCycle('');
-      toast({
-        title: '商品を登録しました',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      try {
+        const newItem = {
+          UID: user.UID,
+          Item: productName,
+          Span: new Date(Date.now() + parseInt(initialCycle) * 24 * 60 * 60 * 1000),
+        };
+        await api.addItem(newItem);
+
+        // フォームをリセット
+        setProductName('');
+        setInitialCycle('');
+
+        // リストを更新
+        const updatedItems = await api.getItems(user.UID);
+        setItems(updatedItems);
+
+        toast({
+          title: '商品を登録しました',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          title: '登録に失敗しました',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     } else {
       toast({
         title: '全ての項目を入力してください',
@@ -52,8 +84,6 @@ const Manage = () => {
       });
     }
   };
-
-  const buttonSize = useBreakpointValue({ base: 'xs', md: 'sm' });
 
   return (
     <Box pb={20}>
@@ -95,14 +125,19 @@ const Manage = () => {
                 <Thead>
                   <Tr>
                     <Th>商品名</Th>
-                    <Th>初期周期（日）</Th>
+                    <Th>購入周期（日）</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {products.map((product) => (
-                    <Tr key={product.id}>
-                      <Td>{product.name}</Td>
-                      <Td>{product.cycle}</Td>
+                  {items.map((item) => (
+                    <Tr key={item.Item}>
+                      <Td>{item.Item}</Td>
+                      <Td>
+                        {Math.floor(
+                          (new Date(item.Span).getTime() - new Date(0).getTime()) / 
+                          (1000 * 60 * 60 * 24)
+                        )}
+                      </Td>
                     </Tr>
                   ))}
                 </Tbody>
@@ -111,33 +146,7 @@ const Manage = () => {
           </Box>
         </VStack>
       </Container>
-
-      {/* Navigation bar at the bottom */}
-      <Box 
-        position="fixed" 
-        bottom={0} 
-        left={0} 
-        right={0} 
-        bg="white" 
-        boxShadow="0 -2px 10px rgba(0, 0, 0, 0.1)"
-      >
-        <Container maxW="container.xl">
-          <HStack justifyContent="space-around" py={2}>
-            <Link to="/" style={{ flex: 1 }}>
-              <Button colorScheme="teal" size={buttonSize} w="full">ホーム</Button>
-            </Link>
-            <Link to="/person" style={{ flex: 1 }}>
-              <Button colorScheme="blue" size={buttonSize} w="full">個人画面</Button>
-            </Link>
-            <Link to="/manage" style={{ flex: 1 }}>
-              <Button colorScheme="green" size={buttonSize} w="full">消耗品登録</Button>
-            </Link>
-            <Link to="/log" style={{ flex: 1 }}>
-              <Button colorScheme="red" size={buttonSize} w="full">購入品入力</Button>
-            </Link>
-          </HStack>
-        </Container>
-      </Box>
+      <Navigation />
     </Box>
   );
 };

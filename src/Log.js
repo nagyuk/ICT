@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Heading,
@@ -15,17 +15,43 @@ import {
   Container,
   useToast,
   FormControl,
-  FormLabel
+  FormLabel,
+  Select,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from '@chakra-ui/react';
 import { Navigation } from './components/Navigation';
 import { api } from './services/api';
 
 const Log = ({ user }) => {
+  const today = new Date().toISOString().split('T')[0];
   const [productName, setProductName] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [purchaseDate, setPurchaseDate] = useState(today); // デフォルトで今日の日付を設定
   const [purchases, setPurchases] = useState([]);
+  const [registeredItems, setRegisteredItems] = useState([]);
   const toast = useToast();
+
+  // 登録済み商品の取得
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const items = await api.getItems(user.UID);
+        setRegisteredItems(items);
+      } catch (error) {
+        toast({
+          title: '商品リストの取得に失敗しました',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    };
+    fetchItems();
+  }, [user.UID, toast]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,10 +70,10 @@ const Log = ({ user }) => {
         // 最終購入日を更新
         await api.updateLastPurchase(user.UID, productName);
 
-        // フォームをリセット
+        // フォームをリセット（数量は1に、日付は今日に）
         setProductName('');
-        setQuantity('');
-        setPurchaseDate('');
+        setQuantity(1);
+        setPurchaseDate(today);
 
         toast({
           title: '購入記録を保存しました',
@@ -73,6 +99,10 @@ const Log = ({ user }) => {
     }
   };
 
+  const handleQuantityChange = (value) => {
+    setQuantity(value);
+  };
+
   return (
     <Box pb={20}>
       <Container maxW="container.xl" py={4}>
@@ -81,33 +111,55 @@ const Log = ({ user }) => {
           
           <Box as="form" onSubmit={handleSubmit}>
             <VStack spacing={4} align="stretch">
-              <FormControl>
+              <FormControl isRequired>
                 <FormLabel>商品名</FormLabel>
-                <Input
-                  placeholder="商品名"
+                <Select
+                  placeholder="商品を選択してください"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                />
+                >
+                  {registeredItems.map((item) => (
+                    <option key={item.Item} value={item.Item}>
+                      {item.Item}
+                    </option>
+                  ))}
+                </Select>
               </FormControl>
-              <FormControl>
+
+              <FormControl isRequired>
                 <FormLabel>数量</FormLabel>
-                <Input
-                  placeholder="数量"
-                  type="number"
+                <NumberInput
+                  min={1}
+                  max={99}
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
+                  onChange={handleQuantityChange}
+                  keepWithinRange={true}
+                  clampValueOnBlur={true}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
               </FormControl>
-              <FormControl>
+
+              <FormControl isRequired>
                 <FormLabel>購入日</FormLabel>
                 <Input
-                  placeholder="購入日"
                   type="date"
+                  max={today}
                   value={purchaseDate}
                   onChange={(e) => setPurchaseDate(e.target.value)}
                 />
               </FormControl>
-              <Button type="submit" colorScheme="blue" w="full">
+
+              <Button 
+                type="submit" 
+                colorScheme="blue" 
+                w="full"
+                isDisabled={!productName || !quantity || !purchaseDate}
+              >
                 保存
               </Button>
             </VStack>

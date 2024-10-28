@@ -26,45 +26,30 @@ const Home = ({ user }) => {
   const [shoppingList, setShoppingList] = useState([]);
   const toast = useToast();
 
-  // 通知の設定
   useEffect(() => {
-    const setupNotifications = async () => {
+    const initializeHome = async () => {
       try {
-        const hasPermission = await notificationService.requestPermission();
-        if (hasPermission) {
-          toast({
-            title: '通知が許可されました',
-            description: '商品の交換時期が近づくとお知らせします',
-            status: 'success',
-            duration: 3000,
-            isClosable: true,
-          });
-        } else {
-          toast({
-            title: '通知が許可されていません',
-            description: 'ブラウザの設定から通知を許可してください',
-            status: 'warning',
-            duration: 5000,
-            isClosable: true,
-          });
+        if (!notificationService.hasPermissionStored()) {
+          const hasPermission = await notificationService.requestPermission();
+          if (hasPermission) {
+            toast({
+              title: '通知が許可されました',
+              description: '商品の交換時期が近づくとお知らせします',
+              status: 'success',
+              duration: 3000,
+              isClosable: true,
+            });
+          }
         }
-      } catch (error) {
-        console.error('通知の設定に失敗しました:', error);
-      }
-    };
 
-    setupNotifications();
-  }, [toast]);
-
-  // 商品データの取得と通知チェック
-  useEffect(() => {
-    const checkItems = async () => {
-      try {
         const items = await api.getItems(user.UID);
         setShoppingList(items);
-        await notificationService.checkItemsAndNotify(items);
+        
+        if (Notification.permission === 'granted') {
+          await notificationService.checkItemsAndNotify(items);
+        }
       } catch (error) {
-        console.error('商品チェックに失敗しました:', error);
+        console.error('初期化に失敗しました:', error);
         toast({
           title: 'データの取得に失敗しました',
           status: 'error',
@@ -74,9 +59,20 @@ const Home = ({ user }) => {
       }
     };
 
-    checkItems();
-    // 15分ごとにチェック
-    const interval = setInterval(checkItems, 15 * 60 * 1000);
+    initializeHome();
+
+    const interval = setInterval(async () => {
+      try {
+        const items = await api.getItems(user.UID);
+        setShoppingList(items);
+        if (Notification.permission === 'granted') {
+          await notificationService.checkItemsAndNotify(items);
+        }
+      } catch (error) {
+        console.error('定期チェックに失敗しました:', error);
+      }
+    }, 15 * 60 * 1000);
+
     return () => clearInterval(interval);
   }, [user.UID, toast]);
 
@@ -161,8 +157,8 @@ const Home = ({ user }) => {
   const handleTestExpirationNotification = () => {
     const testItem = {
       Item: "テスト商品",
-      Lastday: new Date(2024, 0, 1), // 2024年1月1日
-      Span: new Date(2024, 0, 30)    // 2024年1月30日
+      Span: 30,
+      Lastday: "2024-01-01"
     };
     notificationService.checkItemsAndNotify([testItem]);
   };
@@ -248,11 +244,11 @@ const Home = ({ user }) => {
                       {getReplacementBadge(item)}
                     </HStack>
                     <Text fontSize="sm" color="gray.500">
-                      前回の購入日: {new Date(item.Lastday).toLocaleDateString()}
+                      前回の購入日: {new Date(item.Lastday).toLocaleDateString('ja-JP')}
                     </Text>
                     <Input
                       type="date"
-                      value={new Date(item.Lastday).toISOString().split('T')[0]}
+                      value={item.Lastday}
                       onChange={(e) => handleNextReplacementDateChange(item.Item, e.target.value)}
                       size="sm"
                       mt={2}

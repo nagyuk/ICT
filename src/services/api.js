@@ -56,5 +56,25 @@ export const api = {
       item.Lastday = new Date().toISOString().split('T')[0]; // YYYY-MM-DD形式で更新
     }
     return item;
+  },
+  
+  signup: async (userData) => {
+    // ユーザーIDの重複チェック
+    if (mockData.users.some(user => user.userId === userData.userId)) {
+      throw new Error('このユーザーIDは既に使用されています');
+    }
+
+    // 新しいユーザーを作成
+    const newUser = {
+      UID: mockData.users.length + 1,
+      Name: userData.name,
+      Password: userData.password,
+      Familynum: userData.familyNum
+    };
+
+    // モックデータに追加
+    mockData.users.push(newUser);
+
+    return newUser;
   }
 };

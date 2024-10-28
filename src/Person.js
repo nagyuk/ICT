@@ -1,3 +1,4 @@
+// Person.js
 import React, { useState } from 'react';
 import {
   Box,
@@ -21,12 +22,14 @@ import {
   FormLabel,
   Input,
   useDisclosure,
-  useToast
+  useToast,
+  Divider,
+  Text
 } from '@chakra-ui/react';
 import { Navigation } from './components/Navigation';
 import { api } from './services/api';
 
-const Person = ({ user, setUser }) => {
+const Person = ({ user, setUser, onLogout }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editInfo, setEditInfo] = useState({
     Name: user.Name,
@@ -64,6 +67,16 @@ const Person = ({ user, setUser }) => {
       return false;
     }
     return true;
+  };
+
+  const handleLogout = () => {
+    toast({
+      title: 'ログアウトしました',
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+    onLogout();
   };
 
   const handleSubmit = async () => {
@@ -117,11 +130,21 @@ const Person = ({ user, setUser }) => {
             </Stat>
           </SimpleGrid>
 
-          <Box textAlign="center">
+          <VStack spacing={4}>
             <Button colorScheme="blue" size="lg" onClick={onOpen}>
               情報を編集
             </Button>
-          </Box>
+            <Divider />
+            <Button 
+              colorScheme="red" 
+              variant="outline" 
+              size="lg" 
+              width="200px"
+              onClick={handleLogout}
+            >
+              ログアウト
+            </Button>
+          </VStack>
         </VStack>
       </Container>
 

@@ -19,6 +19,16 @@ import {
 import { Navigation } from './components/Navigation';
 import { api } from './services/api';
 
+// 日付をフォーマットする関数
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
+
 const Manage = ({ user }) => {
   const [productName, setProductName] = useState('');
   const [initialCycle, setInitialCycle] = useState('');
@@ -46,10 +56,16 @@ const Manage = ({ user }) => {
     e.preventDefault();
     if (productName && initialCycle) {
       try {
+        const cycleInDays = parseInt(initialCycle);
+        if (isNaN(cycleInDays) || cycleInDays <= 0) {
+          throw new Error('購入周期は1以上の数値を入力してください');
+        }
+
         const newItem = {
           UID: user.UID,
           Item: productName,
-          Span: new Date(Date.now() + parseInt(initialCycle) * 24 * 60 * 60 * 1000),
+          Span: cycleInDays, // 日数として保存
+          Lastday: new Date().toISOString() // ISO文字列として保存
         };
         await api.addItem(newItem);
 
@@ -69,7 +85,7 @@ const Manage = ({ user }) => {
         });
       } catch (error) {
         toast({
-          title: '登録に失敗しました',
+          title: error.message || '登録に失敗しました',
           status: 'error',
           duration: 3000,
           isClosable: true,
@@ -102,10 +118,11 @@ const Manage = ({ user }) => {
                 />
               </FormControl>
               <FormControl>
-                <FormLabel>初期周期（日数）</FormLabel>
+                <FormLabel>購入周期（日数）</FormLabel>
                 <Input
-                  placeholder="初期周期を入力"
+                  placeholder="購入周期を入力"
                   type="number"
+                  min="1"
                   value={initialCycle}
                   onChange={(e) => setInitialCycle(e.target.value)}
                 />
@@ -126,18 +143,15 @@ const Manage = ({ user }) => {
                   <Tr>
                     <Th>商品名</Th>
                     <Th>購入周期（日）</Th>
+                    <Th>前回購入日</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {items.map((item) => (
                     <Tr key={item.Item}>
                       <Td>{item.Item}</Td>
-                      <Td>
-                        {Math.floor(
-                          (new Date(item.Span).getTime() - new Date(0).getTime()) / 
-                          (1000 * 60 * 60 * 24)
-                        )}
-                      </Td>
+                      <Td>{item.Span}</Td>
+                      <Td>{item.Lastday ? formatDate(item.Lastday) : '未購入'}</Td>
                     </Tr>
                   ))}
                 </Tbody>

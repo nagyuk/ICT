@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "kaimono-memo",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -41,5 +41,18 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "description": "\"日用品や消耗品の購入時期を管理するWebアプリケーション\"",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "\"https://github.com/nagyuk/ICT.git\""
+  },
+  "keywords": [
+    "\"react\"",
+    "\"shopping\"",
+    "\"management\""
+  ],
+  "author": "nagyuk",
+  "license": "MIT"
 }

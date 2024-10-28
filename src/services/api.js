@@ -10,14 +10,14 @@ const mockData = {
     {
       UID: 1,
       Item: "おむつ",
-      Span: new Date("2024-10-22"),
-      Lastday: new Date("2024-09-22")
+      Span: 30, // 日数として保存
+      Lastday: "2024-09-22" // ISO文字列として保存
     },
     {
       UID: 1,
       Item: "トイレットペーパー",
-      Span: new Date("2024-11-05"),
-      Lastday: new Date("2024-09-15")
+      Span: 45, // 日数として保存
+      Lastday: "2024-09-15" // ISO文字列として保存
     }
   ]
 };
@@ -32,7 +32,6 @@ export const api = {
   },
 
   updateUser: async (userId, userData) => {
-    // 実際のAPIではユーザー情報を更新
     return { ...mockData.user, ...userData };
   },
 
@@ -44,7 +43,7 @@ export const api = {
   addItem: async (item) => {
     mockData.items.push({
       ...item,
-      Lastday: new Date()
+      Lastday: new Date().toISOString().split('T')[0] // YYYY-MM-DD形式で保存
     });
     return item;
   },
@@ -54,7 +53,7 @@ export const api = {
       i => i.UID === userId && i.Item === itemName
     );
     if (item) {
-      item.Lastday = new Date();
+      item.Lastday = new Date().toISOString().split('T')[0]; // YYYY-MM-DD形式で更新
     }
     return item;
   }

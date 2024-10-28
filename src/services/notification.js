@@ -1,4 +1,3 @@
-// シンプルな通知サービス
 export const notificationService = {
   // 通知の許可を要求
   async requestPermission() {
@@ -18,16 +17,14 @@ export const notificationService = {
 
   // 日数の計算
   calculateDaysUntilReplacement(item) {
+    if (!item.Lastday) return item.Span; // 未購入の場合は周期をそのまま返す
+
     const today = new Date();
     const lastPurchase = new Date(item.Lastday);
-    const span = new Date(item.Span);
     const daysSinceLastPurchase = Math.floor(
       (today - lastPurchase) / (1000 * 60 * 60 * 24)
     );
-    const replacementCycle = Math.floor(
-      (span - new Date(0)) / (1000 * 60 * 60 * 24)
-    );
-    return replacementCycle - daysSinceLastPurchase;
+    return item.Span - daysSinceLastPurchase; // 購入周期から経過日数を引く
   },
 
   // 通知を送信
@@ -42,7 +39,7 @@ export const notificationService = {
 
     new Notification('買い物通知', {
       body: message,
-      requireInteraction: true // 通知が自動で消えないようにする
+      requireInteraction: true
     });
   },
 

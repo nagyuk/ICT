@@ -1,4 +1,3 @@
-// App.js
 import React, { useState } from 'react';
 import {
   Box,
@@ -11,19 +10,23 @@ import {
   Alert,
   AlertIcon,
   VStack,
-  StackDivider,
-  ChakraProvider,
+  HStack,
+  Icon,
+  Container,
+  Flex,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
   ModalBody,
+  ModalFooter,
   ModalCloseButton,
-  useDisclosure,
-  useToast
+  useToast,
+  ChakraProvider
 } from "@chakra-ui/react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ShoppingCart, Clock, Users, CheckCircle } from 'lucide-react';
 import { api } from './services/api';
 import Home from "./Home";
 import Person from './Person';
@@ -54,7 +57,7 @@ const App = () => {
       setUser(userData);
       setErrorMessage("");
     } catch (error) {
-      setErrorMessage("Invalid User ID or Password");
+      setErrorMessage("ユーザーIDまたはパスワードが正しくありません");
     }
   };
 
@@ -146,86 +149,192 @@ const App = () => {
     }
   };
 
+  const renderFeatureCard = (icon, title, description) => (
+    <Box
+      bg="white"
+      p={6}
+      borderRadius="lg"
+      boxShadow="md"
+      flex="1"
+      minW={{ base: "full", md: "250px" }}
+      transition="transform 0.3s ease"
+      _hover={{
+        transform: "translateY(-4px)",
+        boxShadow: "lg"
+      }}
+    >
+      <Icon as={icon} w={8} h={8} color="teal.500" mb={4} />
+      <Text fontWeight="bold" mb={2}>{title}</Text>
+      <Text color="gray.600" fontSize="sm">{description}</Text>
+    </Box>
+  );
+
   const renderLogin = () => (
     <Box
-      bg="gray.50"
       minH="100vh"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      py={12}
+      bg="gray.50"
+      py={8}
     >
-      <Box
-        bg="white"
-        p={8}
-        maxW="400px"
-        borderRadius="md"
-        boxShadow="md"
-        w="full"
-      >
-        <VStack spacing={6} align="stretch" divider={<StackDivider borderColor="gray.200" />}>
-          <Heading as="h1" size="lg" textAlign="center" color="teal.500">
-            Kaimono seisei Application
-          </Heading>
-          <Text fontSize="md" textAlign="center" color="gray.600">
-            Welcome to the Career Success Portal
-          </Text>
+      <Container maxW="container.xl">
+        <VStack spacing={12}>
+          {/* ヘッダーセクション */}
+          <Box textAlign="center" w="full" pt={8}>
+            <Heading
+              as="h1"
+              size="2xl"
+              color="teal.600"
+              mb={4}
+              fontFamily="'Zen Maru Gothic', sans-serif"
+            >
+              買い物生成
+            </Heading>
+            <Text
+              fontSize="xl"
+              color="gray.600"
+              mb={8}
+              fontFamily="'Zen Maru Gothic', sans-serif"
+            >
+              日用品の買い忘れを防ぐ、あなたの生活アシスタント
+            </Text>
+          </Box>
 
-          <form onSubmit={handleLogin}>
-            <VStack spacing={4}>
-              <FormControl id="userId" isRequired>
-                <FormLabel>User ID</FormLabel>
-                <Input
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="Enter your User ID"
-                />
-              </FormControl>
-
-              <FormControl id="password" isRequired>
-                <FormLabel>Password</FormLabel>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your Password"
-                />
-              </FormControl>
-
-              {errorMessage && (
-                <Alert status="error" borderRadius="md">
-                  <AlertIcon />
-                  {errorMessage}
-                </Alert>
+          {/* メインコンテンツ */}
+          <Flex
+            direction={{ base: "column", lg: "row" }}
+            gap={8}
+            w="full"
+            align="center"
+          >
+            {/* 左側: 特徴説明 */}
+            <VStack
+              spacing={6}
+              flex="1"
+              align="stretch"
+              display={{ base: "none", lg: "flex" }}
+            >
+              {renderFeatureCard(
+                ShoppingCart,
+                "買い物リスト自動生成",
+                "使用頻度を学習し、必要な時期に自動でリストアップ"
               )}
-
-              <Button
-                type="submit"
-                colorScheme="teal"
-                width="full"
-                mt={4}
-              >
-                Login
-              </Button>
-              
-              <Button
-                variant="outline"
-                colorScheme="teal"
-                width="full"
-                onClick={onOpen}
-              >
-                新規登録
-              </Button>
+              {renderFeatureCard(
+                Clock,
+                "タイミングの最適化",
+                "家族の人数や使用量に合わせて、最適な購入タイミングを提案"
+              )}
+              {renderFeatureCard(
+                CheckCircle,
+                "買い忘れ防止",
+                "商品の残量が少なくなる前に通知でお知らせ"
+              )}
+              {renderFeatureCard(
+                Users,
+                "家族で共有",
+                "家族メンバーと買い物リストを共有して、効率的に管理"
+              )}
             </VStack>
-          </form>
+
+            {/* 右側: ログインフォーム */}
+            <Box
+              bg="white"
+              p={8}
+              borderRadius="xl"
+              boxShadow="lg"
+              w={{ base: "full", lg: "400px" }}
+              mx="auto"
+            >
+              <VStack spacing={6}>
+                <Heading
+                  as="h2"
+                  size="md"
+                  color="gray.700"
+                  fontFamily="'Zen Maru Gothic', sans-serif"
+                >
+                  ログイン
+                </Heading>
+
+                <form onSubmit={handleLogin} style={{ width: '100%' }}>
+                  <VStack spacing={4}>
+                    <FormControl id="userId" isRequired>
+                      <FormLabel>ユーザーID</FormLabel>
+                      <Input
+                        value={userId}
+                        onChange={(e) => setUserId(e.target.value)}
+                        placeholder="ユーザーIDを入力"
+                        bg="gray.50"
+                        border="1px"
+                        borderColor="gray.300"
+                        _focus={{
+                          borderColor: "teal.500",
+                          boxShadow: "0 0 0 1px teal.500",
+                        }}
+                      />
+                    </FormControl>
+
+                    <FormControl id="password" isRequired>
+                      <FormLabel>パスワード</FormLabel>
+                      <Input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="パスワードを入力"
+                        bg="gray.50"
+                        border="1px"
+                        borderColor="gray.300"
+                        _focus={{
+                          borderColor: "teal.500",
+                          boxShadow: "0 0 0 1px teal.500",
+                        }}
+                      />
+                    </FormControl>
+
+                    {errorMessage && (
+                      <Alert status="error" borderRadius="md">
+                        <AlertIcon />
+                        {errorMessage}
+                      </Alert>
+                    )}
+
+                    <Button
+                      type="submit"
+                      colorScheme="teal"
+                      size="lg"
+                      width="full"
+                      mt={4}
+                    >
+                      ログイン
+                    </Button>
+                    
+                    <Text textAlign="center" color="gray.500">
+                      または
+                    </Text>
+                    
+                    <Button
+                      variant="outline"
+                      colorScheme="teal"
+                      width="full"
+                      onClick={onOpen}
+                    >
+                      新規登録
+                    </Button>
+                  </VStack>
+                </form>
+              </VStack>
+            </Box>
+          </Flex>
+
+          {/* フッター */}
+          <Text color="gray.500" fontSize="sm" textAlign="center" pt={8}>
+            © 2024 買い物生成 All rights reserved.
+          </Text>
         </VStack>
-      </Box>
+      </Container>
 
       {/* サインアップモーダル */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>新規アカウント作成</ModalHeader>
+          <ModalHeader fontFamily="'Zen Maru Gothic', sans-serif">新規アカウント作成</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
@@ -236,16 +345,18 @@ const App = () => {
                   value={signupForm.userId}
                   onChange={handleSignupInputChange}
                   placeholder="ユーザーIDを入力"
+                  bg="gray.50"
                 />
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>名前</FormLabel>
+                <FormLabel>お名前</FormLabel>
                 <Input
                   name="name"
                   value={signupForm.name}
                   onChange={handleSignupInputChange}
                   placeholder="お名前を入力"
+                  bg="gray.50"
                 />
               </FormControl>
 
@@ -257,6 +368,7 @@ const App = () => {
                   value={signupForm.password}
                   onChange={handleSignupInputChange}
                   placeholder="8文字以上"
+                  bg="gray.50"
                 />
               </FormControl>
 
@@ -268,6 +380,7 @@ const App = () => {
                   value={signupForm.confirmPassword}
                   onChange={handleSignupInputChange}
                   placeholder="パスワードを再入力"
+                  bg="gray.50"
                 />
               </FormControl>
 
@@ -279,6 +392,7 @@ const App = () => {
                   value={signupForm.familyNum}
                   onChange={handleSignupInputChange}
                   min={1}
+                  bg="gray.50"
                 />
               </FormControl>
             </VStack>
@@ -288,7 +402,9 @@ const App = () => {
             <Button colorScheme="teal" mr={3} onClick={handleSignup}>
               登録
             </Button>
-            <Button variant="ghost" onClick={onClose}>キャンセル</Button>
+            <Button variant="ghost" onClick={onClose}>
+              キャンセル
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

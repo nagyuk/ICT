@@ -50,16 +50,37 @@ const App = () => {
     familyNum: 1
   });
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const userData = await api.login(userId, password);
-      setUser(userData);
-      setErrorMessage("");
-    } catch (error) {
-      setErrorMessage("ユーザーIDまたはパスワードが正しくありません");
-    }
-  };
+  // App.js の handleLogin 関数を修正
+const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    console.log('ログイン試行:', { userId, password });  // デバッグ用
+
+    const userData = await api.login(userId, password);
+    console.log('ログイン成功:', userData);  // デバッグ用
+
+    setUser(userData);
+    setErrorMessage("");
+
+    toast({
+      title: 'ログイン成功',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+  } catch (error) {
+    console.error('ログインエラー詳細:', error);  // デバッグ用
+    setErrorMessage(error.message || "ユーザーIDまたはパスワードが正しくありません");
+    
+    toast({
+      title: 'ログイン失敗',
+      description: error.message,
+      status: 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  }
+};
 
   const handleLogout = () => {
     setUser(null);

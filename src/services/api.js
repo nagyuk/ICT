@@ -1,80 +1,120 @@
-// モックデータ
-const mockData = {
-  user: {
-    UID: 1,
-    Name: "山田太郎",
-    Password: "career2024",
-    Familynum: 4
-  },
-  items: [
-    {
-      UID: 1,
-      Item: "おむつ",
-      Span: 30, // 日数として保存
-      Lastday: "2024-09-22" // ISO文字列として保存
-    },
-    {
-      UID: 1,
-      Item: "トイレットペーパー",
-      Span: 45, // 日数として保存
-      Lastday: "2024-09-15" // ISO文字列として保存
-    }
-  ]
-};
+// src/services/api.js
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export const api = {
-  // 認証関連
-  login: async (username, password) => {
-    if (username === "jobhunter" && password === "career2024") {
-      return mockData.user;
+  // サインアップ関数
+  signup: async (userData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: userData.userId,
+          password: userData.password,
+          familynum: userData.familyNum
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '登録に失敗しました');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('サインアップエラー:', error);
+      throw error;
     }
-    throw new Error("Invalid credentials");
   },
 
-  updateUser: async (userId, userData) => {
-    return { ...mockData.user, ...userData };
+  addItem: async (item) => {
+    try {
+      // Spanをdate型に変換
+      const spanDate = new Date();
+      spanDate.setDate(spanDate.getDate() + (item.Span || 60)); // デフォルト60日
+
+      const response = await fetch(`${API_BASE_URL}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...item,
+          Span: spanDate.toISOString().split('T')[0]
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('商品追加エラー');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('商品追加エラー:', error);
+      throw error;
+    }
+  },
+
+  // 認証関連
+  login: async (username, password) => {
+    try {
+      console.log('ログインリクエスト送信:', { username, password });  // デバッグ用
+
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'ログインに失敗しました');
+      }
+      
+      console.log('ログイン成功レスポンス:', data);  // デバッグ用
+      return data;
+    } catch (error) {
+      console.error('ログインエラー:', error);
+      throw error;
+    }
   },
 
   // 商品関連
   getItems: async (userId) => {
-    return mockData.items.filter(item => item.UID === userId);
-  },
-
-  addItem: async (item) => {
-    mockData.items.push({
-      ...item,
-      Lastday: new Date().toISOString().split('T')[0] // YYYY-MM-DD形式で保存
-    });
-    return item;
-  },
-
-  updateLastPurchase: async (userId, itemName) => {
-    const item = mockData.items.find(
-      i => i.UID === userId && i.Item === itemName
-    );
-    if (item) {
-      item.Lastday = new Date().toISOString().split('T')[0]; // YYYY-MM-DD形式で更新
+    try {
+      const response = await fetch(`${API_BASE_URL}/items/${userId}`);
+      if (!response.ok) {
+        throw new Error('商品取得エラー');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('商品取得エラー:', error);
+      throw error;
     }
-    return item;
   },
-  
-  signup: async (userData) => {
-    // ユーザーIDの重複チェック
-    if (mockData.users.some(user => user.userId === userData.userId)) {
-      throw new Error('このユーザーIDは既に使用されています');
+
+  updateLastPurchase: async (itemId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}/lastPurchase`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('更新エラー');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('最終購入日更新エラー:', error);
+      throw error;
     }
-
-    // 新しいユーザーを作成
-    const newUser = {
-      UID: mockData.users.length + 1,
-      Name: userData.name,
-      Password: userData.password,
-      Familynum: userData.familyNum
-    };
-
-    // モックデータに追加
-    mockData.users.push(newUser);
-
-    return newUser;
-  }
+  },
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Heading,
-  Text,
   VStack,
   Input,
   Button,
@@ -30,10 +29,16 @@ const Log = ({ user }) => {
   const today = new Date().toISOString().split('T')[0];
   const [productName, setProductName] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [purchaseDate, setPurchaseDate] = useState(today); // デフォルトで今日の日付を設定
+  const [purchaseDate, setPurchaseDate] = useState(today);
   const [purchases, setPurchases] = useState([]);
   const [registeredItems, setRegisteredItems] = useState([]);
   const toast = useToast();
+
+  // ローカルストレージから購入履歴を取得
+  useEffect(() => {
+    const storedPurchases = JSON.parse(localStorage.getItem('purchases')) || [];
+    setPurchases(storedPurchases);
+  }, []);
 
   // 登録済み商品の取得
   useEffect(() => {
@@ -65,12 +70,16 @@ const Log = ({ user }) => {
         };
 
         // 購入記録を追加
-        setPurchases([...purchases, newPurchase]);
+        const updatedPurchases = [...purchases, newPurchase];
+        setPurchases(updatedPurchases);
+
+        // ローカルストレージに保存
+        localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
 
         // 最終購入日を更新
         await api.updateLastPurchase(user.UID, productName);
 
-        // フォームをリセット（数量は1に、日付は今日に）
+        // フォームをリセット
         setProductName('');
         setQuantity(1);
         setPurchaseDate(today);

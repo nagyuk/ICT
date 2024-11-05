@@ -1,33 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Heading,
-  Text,
-  Container,
-  VStack,
-  List,
-  ListItem,
-  IconButton,
-  Flex,
-  HStack,
-  Input,
-  useToast,
-  Badge,
-  Button,
-  ButtonGroup,
-  Grid,
-  Progress,
-  Divider,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Icon,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Tooltip
+import {Box,Heading,Text,Container,VStack,List,ListItem,IconButton,Flex,HStack,Input,useToast,Badge,Button,ButtonGroup,Grid,Progress,Divider,Card,CardHeader,CardBody,CardFooter,Icon,Menu,MenuButton,MenuList,MenuItem,Tooltip
 } from '@chakra-ui/react';
 import {
   ShoppingBag,
@@ -99,71 +71,11 @@ const Home = ({ user }) => {
     return () => clearInterval(interval);
   }, [user.UID, toast]);
 
-  // テスト通知用の関数
-const handleTestNotification = () => {
-  new Notification('テスト通知', {
-    body: 'これはテスト通知です',
-    requireInteraction: true
-  });
-  toast({
-    title: 'テスト通知を送信しました',
-    status: 'info',
-    duration: 2000,
-    isClosable: true,
-  });
-};
-
-// 複数のテストケース用の関数
-const handleTestMultipleNotifications = () => {
-  // 即時通知
-  new Notification('通知テスト1', {
-    body: '即時通知です',
-  });
-
-  // 3秒後に通知
-  setTimeout(() => {
-    new Notification('通知テスト2', {
-      body: '3秒後の通知です',
-    });
-  }, 3000);
-
-  // 6秒後に通知
-  setTimeout(() => {
-    new Notification('通知テスト3', {
-      body: '6秒後の通知です',
-    });
-  }, 6000);
-
-  toast({
-    title: '連続通知を開始しました',
-    description: '3つの通知が順番に表示されます',
-    status: 'info',
-    duration: 2000,
-    isClosable: true,
-  });
-};
-
-// 商品期限切れのテスト通知
-const handleTestExpirationNotification = () => {
-  const testItem = {
-    Item: "テスト商品",
-    Span: 30,
-    Lastday: "2024-01-01"
-  };
-  notificationService.checkItemsAndNotify([testItem]);
-  
-  toast({
-    title: '期限切れ通知をテスト送信しました',
-    status: 'info',
-    duration: 2000,
-    isClosable: true,
-  });
-};
-
   const handleDelete = async (itemName) => {
     try {
-      const newList = shoppingList.filter(item => item.Item !== itemName);
-      setShoppingList(newList);
+      await api.deleteItem(user.UID, itemName);  // API呼び出しで商品を削除
+      const updatedList = shoppingList.filter(item => item.Item !== itemName);
+      setShoppingList(updatedList);
       toast({
         title: '商品を削除しました',
         status: 'success',
@@ -171,8 +83,10 @@ const handleTestExpirationNotification = () => {
         isClosable: true,
       });
     } catch (error) {
+      console.error('削除に失敗しました:', error);
       toast({
         title: '削除に失敗しました',
+        description: '再度お試しください',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -226,7 +140,6 @@ const handleTestExpirationNotification = () => {
     <Box minH="100vh" bg="gray.50" pb={20}>
       <Container maxW="container.xl" py={8}>
         <VStack spacing={8}>
-          {/* ヘッダー */}
           <Box textAlign="center" w="full">
             <Heading 
               as="h1" 
@@ -242,12 +155,7 @@ const handleTestExpirationNotification = () => {
             </Text>
           </Box>
 
-          {/* 概要カード */}
-          <Grid 
-            templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} 
-            gap={6} 
-            w="full"
-          >
+          <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={6} w="full">
             <Card>
               <CardBody>
                 <VStack align="start">
@@ -286,46 +194,6 @@ const handleTestExpirationNotification = () => {
             </Card>
           </Grid>
 
-          {/* 開発用のテストボタン */}
-          {process.env.NODE_ENV === 'development' && (
-            <Card w="full" bg="gray.50" borderStyle="dashed">
-              <CardBody>
-                <VStack spacing={4}>
-                  <Heading as="h3" size="sm" color="gray.600">
-                    開発用通知テスト
-                  </Heading>
-                  <ButtonGroup size="sm" colorScheme="purple" variant="outline">
-                    <Tooltip label="単一の通知をテスト">
-                      <Button
-                        leftIcon={<Icon as={Bell} />}
-                        onClick={handleTestNotification}
-                      >
-                        シンプル通知
-                      </Button>
-                    </Tooltip>
-                    <Tooltip label="複数の通知を連続して送信">
-                      <Button
-                        leftIcon={<Icon as={BellRing} />}
-                        onClick={handleTestMultipleNotifications}
-                      >
-                        連続通知
-                      </Button>
-                    </Tooltip>
-                    <Tooltip label="期限切れ商品の通知をテスト">
-                      <Button
-                        leftIcon={<Icon as={BellDot} />}
-                        onClick={handleTestExpirationNotification}
-                      >
-                        期限切れ通知
-                      </Button>
-                    </Tooltip>
-                  </ButtonGroup>
-                </VStack>
-              </CardBody>
-            </Card>
-          )}
-
-          {/* 商品リスト */}
           <VStack spacing={4} w="full">
             {shoppingList.map((item) => {
               const daysRemaining = notificationService.calculateDaysUntilReplacement(item);
@@ -393,22 +261,12 @@ const handleTestExpirationNotification = () => {
                           <Box>
                             <Progress 
                               value={progress} 
-                              colorScheme={getProgressColor(progress)}
-                              borderRadius="full"
-                              size="sm"
+                              colorScheme={getProgressColor(progress)} 
+                              size="sm" 
+                              borderRadius="full" 
                             />
                           </Box>
                         </Tooltip>
-                      </Box>
-
-                      <Box>
-                        <Text fontSize="sm" mb={2}>購入日を更新</Text>
-                        <Input
-                          type="date"
-                          value={item.Lastday}
-                          onChange={(e) => handleNextReplacementDateChange(item.Item, e.target.value)}
-                          size="sm"
-                        />
                       </Box>
                     </VStack>
                   </CardBody>

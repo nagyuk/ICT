@@ -1,6 +1,9 @@
 // シンプルな通知サービス
 const NOTIFICATION_PERMISSION_KEY = 'notificationPermissionGranted';
 
+// 通知済みアイテムを追跡
+const notifiedItems = new Set();  
+
 export const notificationService = {
   // 通知の許可状態を確認
   hasPermissionStored() {
@@ -71,10 +74,12 @@ export const notificationService = {
     }
 
     items.forEach(item => {
+      if(!notifiedItems.has(item.Item)){
       const daysRemaining = this.calculateDaysUntilReplacement(item);
       if (daysRemaining <= 3) {
         this.sendNotification(item, daysRemaining);
       }
-    });
+      notifiedItems.add(item.Item);  // 通知済みに設定
+    }});
   }
 };
